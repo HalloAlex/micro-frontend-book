@@ -1,0 +1,90 @@
+<html>
+  <body>
+
+  </body>
+  <!-- <script src='https://cdnjs.cloudflare.com/ajax/libs/single-spa/5.9.1/umd/single-spa.min.js'></script> -->
+  <script src='./dist/single-spa.js'></script>
+  <script>
+    window.singleSpa.registerApplication('app1', () => {
+      return new Promise((resolve, reject) => {
+        resolve({
+          bootstrap: [
+            () => {
+              return new Promise(_r => {
+                setTimeout(() => {
+                  console.log('app1 bootstrap1')
+                  _r()
+                }, 1000)
+              })
+            },
+            () => {
+              return new Promise(_r => {
+                setTimeout(() => {
+                  console.log('app1 bootstrap2')
+                  _r()
+                }, 2000)
+              })
+            },
+            () => {
+              return new Promise(_r => {
+                setTimeout(() => {
+                  console.log('app1 bootstrap3')
+                  _r()
+                }, 3000)
+              })
+            },
+          ],
+          mount: () => {
+            return new Promise(_r => {
+              console.log('app1 mount')
+              _r()
+            })
+          },
+          unmount: () => {
+            return new Promise(_r => {
+              console.log('app1 unmount')
+              _r()
+            })
+          }
+        })
+      })
+    }, location => location.hash.startsWith('#/react'))
+    window.singleSpa.registerApplication('app2', () => {
+      return new Promise(resolve => {
+        resolve({
+          bootstrap: () => {
+            return new Promise(_r => {
+              console.log('app2 bootstrap')
+              _r()
+            })
+          },
+          mount: () => {
+            return new Promise(_r => {
+              console.log('app2 mount')
+              _r()
+            })
+          },
+          unmount: () => {
+            return new Promise(_r => {
+              console.log('app2 unmount')
+              _r()
+            })
+          }
+        })
+      })
+    }, location => location.hash.startsWith('#/vue'))
+    window.singleSpa.start()
+
+    // 当 hash 改变时
+    // app2 bootstrap
+    // app2 mount
+    // app2 unmount
+    // 1s后
+    // app1 bootstrap1
+    // 2s后
+    // app1 bootstrap2
+    // 3s后
+    // app1 bootstrap3
+    // app1 mount
+  </script>
+</html>
