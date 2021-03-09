@@ -4,6 +4,8 @@
 2. 创建 VUE 子应用 app2
 3. 创建基应用，注册子应用
 
+[DEMO地址](https://github.com/HalloAlex/micro-frontend-book/tree/master/MicroWithSingleSpa/SingleSpaEasiestDemo)
+
 #### 子应用搭建步骤
 1. 协议导出（bootstrap，mount，unmount）
 2. 把子应用作为类库导出，配置 webpack/output/library && libraryTarget
