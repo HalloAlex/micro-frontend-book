@@ -58,3 +58,5 @@ export const bootstrap = props => {
   return lifecycle.bootstrap(props)
 }
 ```
+
+至此组件微前端就实现了，从实现可以看出来，single-spa 对于组件微前端，并不关心组件应用的实现（只需符合协议接口即可），只是在需要用到组件应用的子应用中注入了 mountParcel，使用 mountParcel 进行组件应用的挂载
