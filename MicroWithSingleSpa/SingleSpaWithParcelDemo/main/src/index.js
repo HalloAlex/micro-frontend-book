@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { registerApplication, start } from 'single-spa'
+import { registerApplication, start } from 'single-spa/lib/esm/single-spa.dev'
 import {
   BrowserRouter as Router,
   Switch,

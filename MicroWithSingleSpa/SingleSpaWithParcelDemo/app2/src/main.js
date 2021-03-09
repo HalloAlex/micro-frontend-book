@@ -1,8 +1,7 @@
 import Vue from 'vue'
 import App from './App.vue'
 import VueRouter from 'vue-router'
-// import Bar from './Bar.vue'
-// import Foo from './Foo.vue'
+import HelloReactParcel from './HelloReactParcel'
 import singleSpaVue from 'single-spa-vue'
 
 Vue.use(VueRouter)
@@ -17,6 +16,10 @@ const router = new VueRouter({
     {
       path: '/bar',
       component: () => import(/* webpackChunkName: 'Bar' */'./Bar.vue')
+    },
+    {
+      path: '/HelloReactParcel',
+      component: HelloReactParcel
     }
   ]
 })
@@ -53,6 +56,11 @@ const vueLifecycle = singleSpaVue({
   }
 })
 
-export const bootstrap = vueLifecycle.bootstrap
+export let mountParcel;
+export const bootstrap = props => {
+  console.log('props:', props)
+  mountParcel = props.mountParcel
+  return vueLifecycle.bootstrap(props)
+}
 export const mount = vueLifecycle.mount
 export const unmount = vueLifecycle.unmount

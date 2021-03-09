@@ -2,6 +2,7 @@
   <div>
     <router-link to="/bar">Bar</router-link>
     <router-link to="/foo">Foo</router-link>
+    <router-link to="/HelloReactParcel">HelloReactParcel</router-link>
     <router-view></router-view>
   </div>
 </template>
