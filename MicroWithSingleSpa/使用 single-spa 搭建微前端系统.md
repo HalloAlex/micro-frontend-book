@@ -136,3 +136,17 @@ ReactDOM.render(<App/>, document.getElementById('root'))
 **基应用需要注意的是：**   
 有时获取 window.app1 或 window.app2 是 undefined   
 这是因为 registerApplication 时 loadApp 加载 js 的顺序问题，比如此 demo 中的 app2，chunk-vendors.js 需要先于 app.js加载，非则会出此问题
+
+
+### 其他问题
+#### 动态路由问题
+比如vue中使用动态路由：Component: () => import('./Foo')，那么在基座应用中动态加载时，域名就是基座应用的域名，这时动态加载就有找不到 js 了。    
+**解决方案：配置 publicPath**   
+1. 配置 webpack 的 puclicPath，比如 vue.config.js 中配置 publicPath: '//localhost:8081'
+2. 代码中修改 webpack 路径变量 __webpack_public_path__
+
+```
+if (window.singleSpaNavigate) {
+  __webpack_public_path__ = '//localhost:8081'
+}
+```
