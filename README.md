@@ -32,8 +32,9 @@ single-spa 的 DEMO 请移步至👇 ：
 #### 应用注册流程 registerApplication
 tips: 这里只展示核心代码，比如 appName 参数既可以传 string，也可以是 object，参数类型判断就不展示   
    
-**registerApplication 总共干三件事🦆 ：**   
-1⃣️  把 app 维护进 apps，几个主要的属性有 appName（应用名称），loadApp（加载子应用的函数，返回 Promise），activeWhen（判断子应用何时激活的函数），customProps（自定义属性），status（当前子应用所处状态，初始化为 NOT_LOADED ），parcels（存储组件应用，暂时不用管），loadErrTime（加载失败时间，用于加载失败多久之后可重新加载）   
+##### registerApplication 总共干三件事
+
+1⃣️  把 app 维护进 apps   
 2⃣️  支持 jquery，支持 jquery on 和 off 路由监听   
 3⃣️  预加载当前路由对应子应用资源   
 ```
@@ -58,6 +59,169 @@ function reroute() {
             })
     }
 }
+
+// app 几个重要属性
+appName（应用名称）
+loadApp（加载子应用的函数，返回 Promise）
+activeWhen（判断子应用何时激活的函数）
+customProps（自定义属性）
+status（当前子应用所处状态，初始化为 NOT_LOADED ）
+parcels（存储组件应用，暂时不用管）
+loadErrTime（加载失败时间，用于加载失败多久之后可重新加载）  
 ```
+
+##### 支持 jquery 些什么？
+因为 jquery 的 on，off 方法也可以监听 hashchange 和 popstate，所以也需要让其走重写的 addEventListener
+```
+if (jQuery) {
+      const originalOnFunction = jQuery.fn.on
+      jQuery.fn.on = (eventName, fn) => {
+            if (['hashchange, popstate'].includes(eventName)) {
+                  window.addEventListener(eventName, fn)
+                  return this
+            }
+            originalOnFunction.apply(this, arguments)
+      }
+
+      const originalOffFunction = jQuery.fn.off
+      jQuery.fn.off = (eventName, fn) => {
+            if (['hashchange, popstate'].includes(eventName)) {
+                  window.removeEventListener(eventName, fn)
+                  return this
+            }
+            originalOffFunction.apply(this, arguments)
+      }
+}
+```
+
+##### 预加载当前路由资源
+调用 loadApp 方法获得 { bootstrap, mount, unmount }，把它们变为异步串行执行函数维护到 app 上
+```
+function toLoadPromise (app) {
+      app.status = LOADING_SOURCE_CODE;
+      const loadPromise = app.loadApp(app.customProps);
+      return loadPromise.then(appInstance => {
+            app.status = NOT_BOOTSTRAPED
+            const { bootstrap, mount, unmount } = appInstance
+            app.bootsrap = fltternFnArray(bootstrap)
+            app.mount = fltternFnArray(mount)
+            app.unmount = fltternFnArray(unmount)
+            return app
+      }),catch(e => {
+            app.status = LOAD_ERR;
+            app.loadErrTime = Date.now();
+      })
+}
+
+// 把多个异步任务的数组变成异步串行执行函数
+function flatternFnArray (fns) {
+   fns = Array.isArray(fns) ? fns : [fns]
+   return props => fns.reduce((p, fn => p.then(() => fn(props))), Promise.resolve())
+}
+```   
+
+到这里注册应用流程就结束了，下面开始启动流程
+
+#### 启动流程 start
+启动函数的主要作用是：   
+1. 根据 appsToUnmount 和 appsToUnload 卸载 app
+2. 根据 appsToLoad 和 appsToMount 加载 app
+
+⚠️ 注意点：
+1. 所谓 卸载 和 加载，可以理解为就是改变 app 的状态 status
+2. 需要注意的一点是：装载操作需要在卸载完成之后执行
+
+
+```
+export let started = false;
+function start () {
+      started = true;
+      reroute();
+}
+
+function reroute () {
+      const { appsToLoad, appsToMount, appsToUnmount, appsToUnload } = getAppChanges();
+      if (started) {
+            performAppChanges();
+      }
+      
+      function performAppChanges () {
+            const unLoadPromises = appsToUnload.map(toUnloadPromise)
+            const unMountPromises = appsToUnmount.map(toUnmountPromise)
+            const allUnloadPromise = Promise.all(unLoadPromises.concat(unMountPromises))
+            appsToLoad.map(toLoadPromise).forEach(loadPromise => {
+                  loadPromise.then(app => {
+                        toBootstrapPromise(app).then(app => {
+                              allUnloadPromise.then(() => {
+                                    toMountPromise(app)
+                              })
+                        })
+                  })
+            })
+            appsToMount
+            .filter(appToMount => appsToLoad.indexOf(appToMount) < 0)
+            .forEach(app => {
+                  allUnloadPromise.then(() => {
+                        toMountPromise(app)
+                  })
+            })
+      }
+}
+```
+
+#### 路由拦截流程
+路由拦截的操作是在 navigationg-event.js 中
+```
+const shouldBeCaptureEvents = ['hashchange', 'popstate'];
+const capturedEvenets = {
+      'hashchange': [],
+      'popstate': []
+}
+window.addEventListener('hashchange', reroute)
+window.addEventListener('popstate', reroute)
+const originalAddEventListener = window.addEventListener;
+const originalRemoveEventListener = window.removeEventListener;
+window.addEventListener = (...args) => {
+      const [eventName, handler] = args;
+      if (shouldBeCaptureEvents.includes(eventName)) {
+            return capturedEvenets[eventName].push(handler)
+      }
+      originalAddEventListener(...args)
+}
+window.removeEventListener = (...args) => {
+      const [eventName, handler] = args;
+      if (shouldBeCaptureEvents.includes(eventName)) {
+            const idx = capturedEvenets[eventName].indexOf(handler)
+            return idx > -1 ? capturedEvenets[eventName].splice(idx, 1) : false
+      }
+      originalRemoveEventListener(...args)
+}
+```
+这样当触发 hashchange 和 popstate 的时候，就会走 reroute 了，而在 single-spa 之后监听的事件就会全被放入 capturedEvenets 中。所以 reroute 就有了可能不是代码调用，而是浏览器事件触发导致 reroute 执行的情况了。   
+
+想一想 🤔️ ：如果是浏览器 hash 改变导致触发的 reroute，需要做些什么呢？   
+1. 有可能是监听新 hash 做某些新页面的操作，也有可能是旧业面被卸载了需求清除数据
+2. 那么在 unmount 旧 app 之后，需要触发保存的事件
+3. mount 新 app 之后，不要触发事件，因为会导致触发两次
+
+那么对 performAppChanges 做下修改
+```
+function reroute (eventArguments) {
+      function performAppChanges () {
+            const unLoadPromises = appsToUnload.map(toUnloadPromise)
+            const unMountPromises = appsToUnmount.map(toUnmountPromise)
+            const allUnPromises = Promise.all(unLoadPromises.concat(unMountPromises))
+            // ... appsToLoad appToMount should be mounted
+            allUnPromises.then(() => {
+                  capturedEvenets[eventArguments.type].forEach(fn => fn(eventArguments))
+            })
+      }
+}
+```
+
+
+
+
+
 
 
