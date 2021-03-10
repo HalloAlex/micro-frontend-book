@@ -31,6 +31,7 @@ single-spa 的 DEMO 请移步至👇 ：
 ### single-spa源码解析
 #### 应用注册流程 registerApplication
 tips: 这里只展示核心代码，比如 appName 参数既可以传 string，也可以是 object，参数类型判断就不展示   
+   
 **registerApplication 总共干三件事🦆 ：**   
 1⃣️  把 app 维护进 apps，几个主要的属性有 appName（应用名称），loadApp（加载子应用的函数，返回 Promise），activeWhen（判断子应用何时激活的函数），customProps（自定义属性），status（当前子应用所处状态，初始化为 NOT_LOADED ），parcels（存储组件应用，暂时不用管），loadErrTime（加载失败时间，用于加载失败多久之后可重新加载）   
 2⃣️  支持 jquery，支持 jquery on 和 off 路由监听   
