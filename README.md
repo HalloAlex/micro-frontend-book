@@ -219,7 +219,32 @@ function reroute (eventArguments) {
 }
 ```
 
+#### 卸载流程
+unmount 事件流程：一般是触发了 reroute 重定向之后，getAppChanges 监测到当前 status 为 MOUNTED 且 appShouldBeActive 为 false，才会执行 unmount
+unload 事件流程：getAppChanges 监测到当前 status 为 NOT_BOOTSTRAPED 或 NOT_MOUNTED 且此前已调用 unloadApplication，才会执行 unload   
 
+##### 如何强制卸载应用
+```
+function unloadApplication (appName, waitForUnmount = false) {
+      // 如果是等待的话，需要经历两次 reroute，才会被 unload，因为等待仅仅是把其放入了 unload.js 文件的 appsToUnload 对象中
+      let app = apps.find(a => a === app)
+      if (waitForUnmount) {
+            const p = new Promise((resolve, reject) => {
+                  appsToUnload[appName] = { app, resolve, reject }
+                  Object.definePrrperty(app, 'promise', {
+                        get () {
+                              return p
+                        }
+                  })
+            })
+            return p;
+      } else {
+         return toUnmountPromise(app).then(app => {
+               return toUnloadPromise(app)
+         })
+      }
+}
+```
 
 
 
