@@ -1,0 +1,53 @@
+<html>
+  <body>
+    <div>这是个主应用</div>
+    <div>
+      这是子应用容器
+      <div id="app1"></div>
+      <div id="app2"></div>
+    </div>
+  </body>
+  <script src="./miniSingleSpa.js"></script>
+  <script>
+    registerApplication('app1', () => {
+      return new Promise(resolve => {
+        console.log('开始加载 app1 资源')
+        resolve({
+          mount (props) {
+            const appContainer = document.getElementById(props.container)
+            appContainer.innerHTML = '这是子应用 app1'
+          },
+          unmount (props) {
+            const appContainer = document.getElementById(props.container)
+            appContainer.innerHTML = ''
+          }
+        })
+      })
+    }, location => location.hash === '#app1', { container: 'app1' })
+
+    registerApplication('app2', () => {
+      return new Promise(resolve => {
+        console.log('开始加载 app2 资源')
+        resolve({
+          mount (props) {
+            const appContainer = document.getElementById(props.container)
+            appContainer.innerHTML = '这是子应用 app2'
+          },
+          unmount (props) {
+            const appContainer = document.getElementById(props.container)
+            appContainer.innerHTML = ''
+          }
+        })
+      })
+    }, location => location.hash === '#app2', { container: 'app2' })
+
+    start()
+
+    /*
+      可以使用
+        location.hash = '#app1'
+        location.hash = '#app2'
+      查看网页变化
+    */
+  </script>
+</html>
