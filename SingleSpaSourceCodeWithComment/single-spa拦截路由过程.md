@@ -59,3 +59,9 @@ function patchedUpdateState (originalMethod) {
 window.history.pushState = patchedUpdateState(window.history.pushState);
 window.history.replaceState = patchedUpdateState(window.history.replaceState);
 ```
+
+### Future State
+Future State指：当在主应用中触发子应用路由时，异步开始加载子应用资源，可是此时在路由系统中找不到 app1/foo 指向的组件
+
+在single-spa的路由拦截中，把 popstate 和 hashchange 的事件保存到了 capturedEventListener 中，只需要在资源加载完成之后遍历执行 capturedEventListener 即可
+
